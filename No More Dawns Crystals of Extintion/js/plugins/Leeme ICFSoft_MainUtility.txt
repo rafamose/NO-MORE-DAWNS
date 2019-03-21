@@ -1,0 +1,640 @@
+Contenido:
+======================================================================
+
+	1 Introducción
+	2 Notas en las etiquetas
+	 2.1 Códigos de rasgos
+	 2.2 Códigos de efectos
+	 2.3 Añadiendo más códigos
+	3 Sistema de interruptores y variables locales y de batalla
+	4 Sistema de etiquetas
+	5 Comandos del complemento
+	6 Funciones de script
+	 6.1 Uso del sistema de código javascript
+	7 Nuevas características de los array
+	 7.1 Sin alterar el array
+	 7.2 Alterando el contenido del array
+	 7.3 Crear un array desde un string
+	8 Términos de uso
+
+
+1 INTRODUCCIÓN
+======================================================================
+
+Este plugin viene con mucha funcionalidad haciendo más fácil la
+programación.
+
+Hay unas cuantas funciones recurrentes en mis complementos de modo que
+este engloba todos los que uso y pueda necesitar.
+Es necesario para la mayoría de mis complementos.
+
+Corresponde a la versión 1.03 del plugin.
+
+
+2 NOTAS EN LAS ETIQUETAS
+======================================================================
+
+Puedes usar código json en la etiqueta 'Json master' para añadir más
+campos o editar los ya existentes sin restricciones. Mucho mejor que
+las simples etiquetas meta.
+
+Utiliza cada linea entre las etiquetas de abertura y cierre para
+editar un campo, primero el nombre del campo, luego dos puntos, un
+espacio y el código en formato json.
+
+Ejemplo:
+
+<JSON MASTER>
+gold: 50000000
+hands_power: [50,100]
+alias: 'Romistrugio'
+</JSON MASTER>
+
+
+Puedes añadir rasgos con la etiqueta 'Traits master'.
+En cada linea entre las etiquetas de apertura y cierre van tres números
+separados por espacios. Se recomienda usar los tres aún cuando el rasgo
+solo necesite dos, puedes continuar la linea con comentarios.
+Puedes usar un nombre en lugar del primer número (más abajo puedes
+encontrar todos los disponibles).
+
+Ejemplo:
+
+<TRAITS MASTER>
+elem_rate 1 1.5
+21 1 2
+31 2 0 -Elemento de ataque
+</TRAITS MASTER>
+
+
+Puedes añadir grupos de rasgos con la etiqueta 'Subtraits master'.
+Pueden usarse como rasgos de subclase, rasgos aleatorios para
+enemigos/objetos/armas, fases de un estado alterado y más.
+Funciona como la etiqueta anterior pero no necesitas cerrar antes de
+abrir un nuevo subconjunto.
+
+Ejemplo:
+
+<SUBTRAITS MASTER> -Limo de fuego
+elem_rate 1 1.5
+11 2 0.5
+31 2 0 -Ataca con fuego
+<SUBTRAITS MASTER> -Limo de hielo
+elem_rate 1 1.5
+11 2 2.1
+31 3 0 -Ataca con hielo
+</SUBTRAITS MASTER>
+ 
+
+Nota: Varios complementos pueden usar subconjuntos para las mismas
+tablas de la base de datos para diferentes propósitos, de modo que
+debes proveer un modo de usar subconjuntos específicos, por ejemplo
+algo así como "<MiIncreiblePluginSubtraits primero ultimo>" podría ser
+útil.
+
+Para acceder a un subconjunto se utiliza 'item.subtraits[i].traits' en
+lugar de 'item.traits', donde 'i' es el índice.
+Y para el objeto del subconjunto usar 'item.subtraits[i]' en lugar de
+'item'.
+
+
+Puedes añadir efectos y grupos de efectos mediante las etiquetas
+'Effects master' y 'Subeffects master'. Funcionan de un modo
+similar a las traits/subtraits pero se usan para efectos sus grupos.
+Estas requieren el uso de cuatro números.
+Puedes usar un nombre en lugar del primer número (más abajo puedes
+encontrar todos los disponibles).
+
+Examples:
+
+<EFFECTS MASTER>
+recover_hp 0 0.5 50
+gain_tp 0 10 0
+</EFFECTS MASTER>
+
+<SUBEFFECTS MASTER>
+recover_mp 0 0.5 50
+gain_tp 0 5 0
+<SUBEFFECTS MASTER>
+recover_hp 0 0.5 50
+gain_tp 0 10 0
+</SUBEFFECTS MASTER>
+
+
+Nota: Varios complementos pueden usar subconjuntos para las mismas
+tablas de la base de datos para diferentes propósitos, de modo que
+debes proveer un modo de usar subconjuntos específicos, por ejemplo
+algo así como "<MiIncreiblePluginSubeffects primero ultimo>" podría ser
+útil.
+
+Para acceder a un subconjunto se utiliza 'item.subeffects[i].effects' en
+lugar de 'item.effects', donde 'i' es el índice.
+Y para el objeto del subconjunto usar 'item.subeffects[i]' en lugar de
+'item'.
+
+
+Puedes añadir código javascript con la etiqueta 'JSEval master'.
+Ese código se ejecutará en condiciones específicas o el propósito
+para el que ha sido diseñado.
+Se puede hacer de una clave, dos o las que hagan falta, y no hace falta
+cerrar la etiqueta cuando se ponen consecutivas.
+
+Ejemplo:
+
+<JSEVAL MASTER A>
+this.gainTp(15);
+<JSEVAL MASTER A B>
+if (this == subject) this.gainMp(-10);
+v.setValue(10, v.value(10) + 2);
+</JSEVAL MASTER>
+
+Hay algunas variables a las que se puede acceder dentro del código:
+  - subject: el sujeto de la acción.
+  - item: el objeto usado en la acción. Puede ser un objeto o habilidad.
+  - isSkill: comprueba si se trata de una habilidad.
+
+
+Tambien puedes añadir etiquetas especiales para distintos propósitos:
+
+<TAGS tag1 tag2>
+
+Las etiquetas se dividen en tres grupos en base a su origen.
+  - Las base son las que son própias de los personajes y enemigos
+    (actores, clases, enemigos y las añadidas mediante comando).
+  - Las demás son las añadidas mediante estados alterados y equipamiento.
+  - Las de batalla son las que se añaden durante el combate, solo son
+    accesibles ahí y se reinician cada combate. Se añaden al segundo
+    grupo.
+
+2.1 Códigos de rasgos-------------------------------------------------
+
+Esta es la lista de todos los nombres que pueden usarse dentro de las
+etiquetas traits/subtraits master.
+Están todos los códigos usados por RPG Maker MV mas los que utilizan
+mis complementos:
+
+    elem_rate
+    debuffrate, ndebuffrate
+    state_rate
+    state_resist
+    skill_rate, itemdamage_rate, weapon_rate
+    elem_absorb, elem_curse
+    paramplus, paramrate, paramflat, paramxrate
+    xparamplus, xparamrate, xparamflat
+    sparamplus, sparamrate, sparamflat
+    nparamplus, nparamrate, nparamflat, nparamxrate
+    pparamplus, pparamrate, pparamflat
+    attack_elem
+    attack_state
+    attack_speed
+    attack_times
+    attack_weapon
+    elem_enhace, skill_enhace, weapon_enhace, itemdamage_enhace
+    stypeadd
+    stypeseal
+    skilladd
+    skillseal
+    equipweapon
+    equiparmor
+    equiplock
+    equipseal
+    slot_type
+    action_plus
+    special_flag
+    collapse_type
+    party_ability
+
+2.2 Códigos de efectos------------------------------------------------
+
+Esta es la lista de todos los nombres que pueden usarse dentro de las
+etiquetas effects/effects master con su uso. Los espacios vacíos
+se llenan con ceros.
+Están todos los códigos usados por RPG Maker MV mas los que utilizan
+mis complementos:
+
+    recover_hp     0 hprate fixed
+    recover_mp     0 mprate fixed
+    gain_tp        0 value 0
+    add_state      stateId chance 0	-StateId = 0 los estados de ataque del personaje/enemigo
+    remove_state   stateId chance 0
+    add_buff       paramId turns 0
+    add_debuff     paramId turns 0
+    remove_buff    paramId 0 0
+    remove_debuff  paramId 0 0
+    add_nbuff      paramId turns 0
+    add_ndebuff    paramId turns 0
+    remove_nbuff   paramId 0
+    remove_ndebuff paramId 0
+    special        code 0 0             -Sólo hay un código actualmente 0 = escapar
+    grow           paramId value 0
+    learn_skill    skillId 0 0
+    common_event   eventId 0 0
+    ngrow          nparamId value 0
+
+2.3 Añadiendo más códigos---------------------------------------------
+
+Es posible añadir más nombres para tus plugins con las siguientes
+sentencias:
+
+ICF.MainUtility.traittags.push([name, code, offset]);
+ICF.MainUtility.effecttags.push([name, code, offset]);
+
+    name: el nombre a usar.
+
+    code: el código que resultante de cuando se utilice ese nombre.
+
+    offset: un desplazamiento extra cuando se quiere reutilizar un
+      código existente. En caso contrario poner 0.
+
+
+3 SISTEMA DE INTERRUPTORES Y VARIABLES LOCALES Y DE BATALLA
+======================================================================
+
+Este sistema especial permite usar interruptores y variables para
+eventos, mapas y actores.
+
+Además hay interruptores y variables virtuales para el grupo y los
+enemigos. En los del grupo es una combinación del interruptor o la
+variable de todos los miembros del grupo.
+El uso de interruptores y variables locales se ha extendido para
+enemigos y el de los de batalla para los personajes.
+
+Los interruptores y variables locales para los enemigos funcionan
+de un modo diferente. Están ligados a la id de enemigo en lugar de 
+la posición, de modo que los enemigos que tengan la misma id
+compartirán los interruptores y variables locales.
+
+El sistema de variables permite utilizar cualquier tipo de valor o
+valores estrícticamente numéricos.
+
+Los de batalla son reciclables y se reinician en cada batalla.
+
+
+4 SISTEMA DE ETIQUETAS
+======================================================================
+
+También hay un sistema especial de etiquetas y etiquetas de batalla
+para personajes, enemigos, clases, objetos y más.
+
+Las etiquetas pueden usarse para diversos propósitos.
+
+5 COMANDOS DE COMPLEMENTO
+======================================================================
+
+selfswitch x true/false
+mapswitch x true/false
+actorswitch actorid x true/false
+enemyswitch enemyid x true/false
+battleswitch x true/false
+actorbattleswitch actorid x true/false
+enemybattleswitch enemyposition x true/false
+
+    - Activa o desactiva el autointerruptor, interruptor de mapa
+      o de personaje.
+
+remoteswitch mapid eventid x true/false
+
+    - Activa o desactiva el autointerruptor o interruptor de mapa
+      específico de forma remota. Usar eventid 0 para interruptor de
+      mapa.
+
+selfvariable x value
+mapvariable x value
+actorvariable actorid x value
+enemyvariable enemyid x value
+battlevariable x value
+actorbattlevariable actorid x value
+enemybattlevariable enemyposition x value
+
+    - Cambia el valor de la variable de evento, mapa o personaje.
+      Se pueden añadir los prefijos increase/multiply/divide/mod.
+
+remotevariable mapid eventid x value
+
+    - Cambia el valor de la variable de evento o mapa específico
+      de forma remota. Usar eventid 0 para interruptor de mapa.
+      Se pueden añadir los prefijos increase/multiply/divide/mod.
+
+actortraitadd actorid code id value
+partymembertraitadd actorpos code id value
+enemytraitadd enemy code id value
+
+    - Añade un rasgo dentro del juego para el personaje, personaje del
+      grupo o enemigo.
+      No comprueba si existen repetidos (mismos code e id).
+
+actortrait actorid code id value
+partymembertrait actorpos code id value
+enemytrait enemy code id value
+
+    - Asegura un rasgo dentro del juego para el personaje, personaje
+      del grupo o enemigo. Si no hay se añade, si hay almenos uno se
+      sobreescribe y el resto se elimina.
+
+actortraitplus actorid code id value
+partymembertraitplus actorpos code id value
+enemytraitplus enemy code id value
+
+    - Incrementa un rasgo dentro del juego para el personaje,
+      personaje del grupo o enemigo. Si no hay se añade, si hay
+      almenos uno se todos los que tenga se combinan mediante suma.
+
+actortraitrate actorid code id value
+partymembertraitrate actorpos code id value
+enemytraitrate enemy code id value
+
+    - Multiplica un rasgo dentro del juego para el personaje,
+      personaje del grupo o enemigo. Si no hay se añade, si hay
+      almenos uno se todos los que tenga se combinan mediante
+      multiplicación.
+
+removeactortrait actorid code id
+removepartymembertrait actorpos code id
+removeenemytraitenemy code id
+
+    - Elimina todos los rasgos dentro del juego con código e id
+      específicos del personaje, personaje del grupo o enemigo.
+
+clearactortraits actorid
+clearpartymembertraits actorpos
+clearenemytraits enemy
+
+    - Elimina todos los rasgos dentro del juego del personaje,
+      personaje del grupo o enemigo.
+
+
+addactortag actorid tag
+addpartymembertag actorposition tag
+addenemytag enemypos tag
+
+   - Añade etiquetas durante el juego a un personaje, personaje del
+     grupo o enemigo. Puedes poner varias en una misma linea.
+
+removeactortag actorid tag
+removepartymember actorposition tag
+removeenemy enemypos tag
+
+   - Elimina etiquetas durante el juego a un personaje, personaje del
+     grupo o enemigo previamente añadidas. Puedes eliminar varias en
+     una misma linea.
+
+clearactortag actorid tag
+clearpartymember actorposition tag
+clearenemy enemypos tag
+
+   - Elimina todas etiquetas añadidas durante el juego a un personaje,
+     personaje del grupo o enemigo.
+
+Cambiando addactortag por addactorbattletag puedes usar etiquetas de
+batalla. Para cualquier comando de etiquetas.
+
+6 FUNCIONES DE SCRIPT
+======================================================================
+
+Hay funciones de script Para usar en las fórmulas y código o, si lo
+prefieres, en lugar de los comandos de complemento:
+
+Interruptores y variables locales desde eventos, actores y enemigos:
+
+selfswitch(selfswitch);
+setselfswitch(selfswitch, value)
+selfvariable(selfvariable)
+strictselfvariable(selfvariable)
+setselfvariable(selfvariable, value)
+increaseselfvariable(selfvariable, value)
+multiplyselfvariable(selfvariable, value)
+divideselfvariable(selfvariable, value)
+modselfvariable(selfvariable, value)
+
+battleswitch(selfswitch);
+setbattleswitch(selfswitch, value)
+battlevariable(selfvariable)
+strictbattlevariable(selfvariable)
+setbattlevariable(selfvariable, value)
+increasebattlevariable(selfvariable, value)
+multiplybattlevariable(selfvariable, value)
+dividebattlevariable(selfvariable, value)
+modbattlevariable(selfvariable, value)
+
+
+Interruptores y variables de mapa desde eventos y mapas:
+
+mapswitch(mapswitch)
+setmapswitch(mapswitch, value)
+mapvariable(mapvariable)
+strictmapvariable(mapvariable)
+setmapvariable(mapvariable, value)
+increasemapvariable(mapvariable, value)
+multiplymapvariable(mapvariable, value)
+dividemapvariable(selfvariable, value)
+modmapvariable(selfvariable, value)
+
+Interruptores y variables del grupo:
+
+selfswitch(selfswitch)
+      - Comprueba si al menos un miembro del equipo tiene el interruptor
+        activado.
+
+selfvariable(selfvariable)
+maxselfvariable(selfvariable)
+minselfvariable(selfvariable)
+avgselfvariable(selfvariable)
+      - Comprueba la suma, el máximo, el mínino o la media del valor
+        de la variable de cada miembro del equipo.
+
+-Para usar los de batalla basta con cambiar self por battle.
+
+
+Para cambiar interruptores y variables remotamente:
+
+ICF.MainUtility.CustomSwitch(mapid, evid, switchname, value)
+ICF.MainUtility.CustomVariable(mapid, evid, variablename, value)
+ICF.MainUtility.IncreaseCustomVariable(mapid, evid, variablename, value)
+ICF.MainUtility.MultiplyCustomVariable(mapid, evid, variablename, value)
+ICF.MainUtility.DivideCustomVariable(mapid, evid, variablename, value)
+ICF.MainUtility.ModCustomVariable(mapid, evid, variablename, value)
+      - Puedes usar evid 0 para los de mapa.
+        Puedes usar mapid 0 para los personajes.
+        Puedes usar mapid "e" para los enemigos.
+
+
+Para cambiar interruptores y variables de batalla remotamente:
+
+ICF.MainUtility.BattleSwitch(code, enemy, switchname, value)
+ICF.MainUtility.BattleVariable(code, enemy, variablename, value)
+ICF.MainUtility.IncreaseBattleVariable(code, enemy, variablename, value)
+ICF.MainUtility.MultiplyBattleVariable(code, enemy, variablename, value)
+ICF.MainUtility.DivideBattleVariable(code, enemy, variablename, value)
+ICF.MainUtility.ModBattleVariable(code, enemy, variablename, value)
+      - Usa code y enemy 0 para los normales.
+        Usa code 0 para los personajes.
+        Usa code "e" para los enemigos.
+
+
+Para añadir/quitar rasgos durante el juego:
+
+ICF.MainUtility.addTrait(data, mode, code, dataid, value)
+      - Data tiene que ser un actor o enemigo.
+        Modos:
+        0: Añade el rasgo.
+        1: Añade el rasgo y elimina los repetidos (mismos code y dataid).
+        2: Suma el valor al rasgo y junta los repetidos mediante suma.
+        3: Multiplica el valor del rasgo y junta los repetidos mediante.
+           multiplicacion.
+        Si no tiene ningún rasgo con code y dataid especificos se
+        añade sin más.
+
+ICF.MainUtility.removeTrait(data, code, dataid)
+      - Data tiene que ser un actor o enemigo.
+        Elimina todos los rasgos añadidos durante el juego con code y
+        dataid específicos.
+
+Puedes añadir o quitar rasgos directamente del personaje o enemigo:
+
+actor/enemy addTrait(code, dataid, value)
+actor/enemy setTrait(code, dataid, value)
+actor/enemy increaseTrait(code, dataid, value)
+actor/enemy multiplyTrait(code, dataid, value)
+actor/enemy removeTrait(code, dataid)
+
+actor/enemy clearTraits()
+      - Elimina todos los rasgos añadidos durante el juego al personaje
+        o enemigo.
+
+
+Puedes añadir/quitar etiquetas normales y de batalla directamente de un
+personaje o enemigo con los siguientes comandos:
+
+actor/enemy addTag(tag)
+actor/enemy addTags(tags)
+actor/enemy removeTag(tag)
+actor/enemy removeTags(tags)
+actor/enemy clearTags()
+actor/enemy addBattleTag(tag)
+actor/enemy addBattleTags(tags)
+actor/enemy removeBattleTag(tag)
+actor/enemy removeBattleTags(tags)
+actor/enemy clearBattleTags()
+
+También comprobar si un personaje/enemigo tiene cierta etiqueta o contar
+cuantas de un array tiene con las siguientes:
+
+actor/enemy hasBaseTag(tag)
+actor/enemy hasTag(tag)
+actor/enemy countBaseTags(tags)
+actor/enemy countTags(tags)
+
+Y si quieres acceder directamente:
+
+actor/enemy baseTags()
+actor/enemy battleTags()
+actor/enemy allTags()
+
+6.1 Uso del sistema de código javascript------------------------------
+
+Para ejecutar código javascript en un personaje/enemigo se usan las
+funciones de jsevalreactions. Útil en el desarrollo de plugins.
+
+jsevalReactions(subject, item, isSkill, reaction)
+      - reaction es un string o una clave.
+        Ejemplo: 'a'
+
+jsevalArrayReactions(subject, item, isSkill, reactions)
+      - reactions es un array de strings y/o claves.
+        Ejemplo: ['a','b',['a','c']]
+
+jsevalBulkReactions(subject, item, isSkill, reactions)
+      - reactions es un array de arrays para formar claves.
+        Ejemplo: [['a',[1,2]],['b',[2,3]]]
+        Dará como resultado las claves ['a',1],['a',2],['b',2] y ['b',3].
+
+      - subject es un battler, útil para saber el que origina
+        la acción.
+      - item es el objeto usado en la acción. Normalmente es una
+        habilidad u objeto.
+      - isSkill se usa cuando hay que definir si se ha utilizado
+        una habilidad.
+
+
+7 NUEVAS CARACTERÍSTICAS DE LOS ARRAY
+======================================================================
+
+Array.range()
+      - Crea un nuevo array en un rango. Puedes usar hasta tres
+        argumentos:
+        1: de 1 hasta el valor (o desde -1 si es negativo).
+        2: desde el primer valor al segundo.
+        3: desde el primer valor al segundo mediante un sumando.
+
+Array.coincidences()
+      - Crea un nuevo array con todos los valores no repetidos
+        presentes en todas las arrays.
+        Solo puedes pasar arrays como argumentos pero puedes usar todos
+        los que necesites.
+
+7.1 Sin alterar el array----------------------------------------------
+
+cleaned()
+      - Devuelve un array sin los valores vacíos.
+
+cleanedAll()
+      - Igual que el anterior pero además comprueba las arrays dentro.
+
+numbers()
+      - Devuelve todos los números del array.
+
+
+7.2 Alterando el contenido del array----------------------------------
+
+removeRepeated()
+      - Elimina los valores repetidos.
+
+clean()
+      - Elimina los índices vacíos.
+
+cleanAll()
+      - Elimina los índices vacíos y los de los arrays interiores.
+
+extend()
+      - Extiende el array añadiendo rangos. Si hay un conector de rango
+        ('to' en inglés, 'a' y 'hasta' en español) se añadirá un rango
+        entre los dos valores adyacentes.
+
+fixedBlocks(mod)
+      - Asegura que la división de la longitud del array entre el mod
+        de resto 0 añadiendo índices vacíos.
+
+leaveNumbers()
+      - Elimina todos los valores no numéricos.
+
+reduceToFit()
+      - Reduce la longitud del array para adecuarse a la longitud de
+        otros arrays. Solo puedes pasar arrays como argumentos pero
+        puedes usar todos los que necesites.
+
+
+7.3 Crear un array desde un string------------------------------------
+
+doubleSplit()
+      - Divide la string en dos fases. Primero entre las comas y
+        después entre espacios.
+
+doubleSplitNumbers()
+      - Igual que el anterior pero le aplica además rangos y deja
+        solo los números.
+
+
+8 TÉRMINOS DE USO
+======================================================================
+
+	* Para juegos comerciales y no comerciales.
+
+	* Se debe incluir a ICF-Soft en los créditos.
+
+	* Cualquier plugin que necesite este para funcionar debe
+	  incluir una cláusula que indique que se debe incluir a
+          ICF-Soft en los créditos.
+
+	* La cabecera y los archivos leeme del complemento deben
+	  incluirse íntegramente con el plugin.
+
