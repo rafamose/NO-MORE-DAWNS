@@ -1,10 +1,12 @@
 [
 null,
-{"id":1,"battlerName":"Prota","characterIndex":0,"characterName":"AA-Ritchie","classId":7,"equips":[10,1,2,3,4],"faceIndex":0,"faceName":"Prota","traits":[],"initialLevel":1,"maxLevel":99,"name":"Ritchie","nickname":"","note":"<passive state: 12>","profile":""},
-{"id":2,"battlerName":"compi1","characterIndex":0,"characterName":"AA-Elise","classId":1,"equips":[2,1,2,3,0],"faceIndex":0,"faceName":"compi1","traits":[],"initialLevel":1,"maxLevel":99,"name":"Elise","nickname":"","note":"","profile":""},
-{"id":3,"battlerName":"compi2","characterIndex":0,"characterName":"AA-Jake","classId":3,"equips":[3,0,2,3,4],"faceIndex":0,"faceName":"compi2","traits":[],"initialLevel":1,"maxLevel":99,"name":"Jake","nickname":"","note":"","profile":""},
-{"id":4,"battlerName":"compi3","characterIndex":0,"characterName":"AA-Carol","classId":4,"equips":[4,0,2,3,4],"faceIndex":0,"faceName":"Compi3","traits":[],"initialLevel":1,"maxLevel":99,"name":"Carol","nickname":"","note":"","profile":""},
+{"id":1,"battlerName":"Prota","characterIndex":0,"characterName":"AA-Ritchie","classId":2,"equips":[10,1,2,3,4],"faceIndex":0,"faceName":"A-Ritchie","traits":[],"initialLevel":1,"maxLevel":99,"name":"Ritchie","nickname":"","note":"<passive state: 12>","profile":""},
+{"id":2,"battlerName":"compi1","characterIndex":0,"characterName":"AA-Elise","classId":1,"equips":[2,1,2,3,0],"faceIndex":0,"faceName":"A-Elise","traits":[],"initialLevel":1,"maxLevel":99,"name":"Elise","nickname":"","note":"","profile":""},
+{"id":3,"battlerName":"compi2","characterIndex":0,"characterName":"AA-Jake","classId":3,"equips":[3,0,2,3,4],"faceIndex":1,"faceName":"A-Jake","traits":[],"initialLevel":1,"maxLevel":99,"name":"Jake","nickname":"","note":"","profile":""},
+{"id":4,"battlerName":"compi3","characterIndex":0,"characterName":"AA-Carol","classId":13,"equips":[4,0,2,3,4],"faceIndex":2,"faceName":"A-Carol","traits":[],"initialLevel":1,"maxLevel":99,"name":"Carol","nickname":"","note":"","profile":""},
 {"id":5,"battlerName":"","characterIndex":2,"characterName":"slime","classId":1,"equips":[0,0,0,0,0],"faceIndex":0,"faceName":"Yee","traits":[],"initialLevel":1,"maxLevel":99,"name":"Slime","nickname":"","note":"","profile":""},
 {"id":6,"battlerName":"","characterIndex":5,"characterName":"B-mox","classId":1,"equips":[0,0,0,0,0],"faceIndex":1,"faceName":"Yee","traits":[],"initialLevel":1,"maxLevel":99,"name":"B-mox","nickname":"","note":"","profile":""},
-{"id":7,"battlerName":"","characterIndex":0,"characterName":"","classId":1,"equips":[0,0,0,0,0],"faceIndex":0,"faceName":"","traits":[],"initialLevel":1,"maxLevel":99,"name":"trans","nickname":"","note":"","profile":""}
+{"id":7,"battlerName":"","characterIndex":0,"characterName":"","classId":1,"equips":[0,0,0,0,0],"faceIndex":0,"faceName":"","traits":[],"initialLevel":1,"maxLevel":99,"name":"trans","nickname":"","note":"","profile":""},
+{"id":8,"battlerName":"Vengefly","characterIndex":0,"characterName":"","classId":1,"equips":[0,0,0,0,0],"faceIndex":2,"faceName":"Animals","traits":[],"initialLevel":1,"maxLevel":99,"name":"Vengefly","nickname":"","note":"","profile":""},
+{"id":9,"battlerName":"","characterIndex":1,"characterName":"BigBoss","classId":1,"equips":[0,0,0,0,0],"faceIndex":0,"faceName":"Big boss","traits":[],"initialLevel":1,"maxLevel":99,"name":"","nickname":"","note":"","profile":""}
 ]
