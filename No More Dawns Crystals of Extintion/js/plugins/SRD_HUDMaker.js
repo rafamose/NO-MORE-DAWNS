@@ -2,6 +2,10 @@
  * @plugindesc Allows developers to create their own map-based HUD through an in-game GUI window!
  * @author SumRndmDde
  *
+ * @param Active Updating
+ * @desc If 'true', then HUD pieces will automatically update whenever properties are changed in the editor.
+ * @default false
+ *
  * @param Show During Events
  * @desc Sets what happens to the HUD during event processing.
  * Choices are:   hide    -    show    -    transparent
@@ -15,10 +19,14 @@
  * @desc This is a condition that must be true for the battle HUD to be visible and active.
  * @default
  *
+ * @param Disable Delete Key
+ * @desc If 'true', the Delete key will no longer delete the currently highlighted piece.
+ * @default true
+ *
  * @help
  *
  * HUD Maker
- * Version 1.34
+ * Version 1.42
  * SumRndmDde
  *
  *
@@ -72,7 +80,7 @@ SRD.HUDMaker = SRD.HUDMaker || {};
 SRD.NotetagGetters = SRD.NotetagGetters || [];
 
 var Imported = Imported || {};
-Imported["SumRndmDde HUD Maker"] = 1.34;
+Imported["SumRndmDde HUD Maker"] = 1.42;
 
 var $dataMapHUD = [];
 var $dataBattleHUD = [];
@@ -97,6 +105,8 @@ function HUDManager() {
 // SRD.HUDMaker
 //-----------------------------------------------------------------------------
 
+_.isV150 = Utils.RPGMAKER_VERSION && Utils.RPGMAKER_VERSION >= '1.5.0';
+
 _.alertNeedSuperToolsEngine = function(update) {
 	if(update) {
 		alert("The 'SRD_SuperToolsEngine' needs to be version 1.12 or greater to use the 'SRD_HUDMaker' plugin.");
@@ -117,10 +127,15 @@ if(!Imported["SumRndmDde Super Tools Engine"]) {
 }
 
 const params = PluginManager.parameters('SRD_HUDMaker');
+
+_.active = String(params['Active Updating']).trim().toLowerCase() === 'true';
+
 _.duringEvents = String(params['Show During Events']).trim().toLowerCase();
 
 _.mapCondition = String(params['Map Global Condition']);
 _.battleCondition = String(params['Battle Global Condition']);
+
+_.deleteKey = !String(params['Disable Delete Key']).trim().toLowerCase() === 'true';
 
 _.isPlaytest = SRD.SuperToolsEngine.isPlaytest;
 _.mapFile = "MapHUD.json";
@@ -210,7 +225,7 @@ _.getFirstFile = function(folder) {
 _.checkDataExists();
 
 _.checkForCC = function() {
-	if(Imported["SumRndmDde Character Creator"]) {
+	if(Imported["SumRndmDde Character Creator"] || Imported["SumRndmDde Character Creator EX"]) {
 		Sprite_HUDFace.prototype.refreshBitmap = function() {
 			this.bitmap.clear();
 			const color = _.convertHex(this["Background Color"], parseInt(this["Background Alpha"]));
@@ -464,12 +479,12 @@ SceneManager.onKeyDown = function(event) {
 SceneManager.onKeyDownHUDMaker = function(event) {
 	if(!event.ctrlKey && event.keyCode === 46) {
 		// Delete
-		if(HUDManager._currentId >= 0) {
+		if(_.deleteKey && HUDManager._currentId >= 0) {
 			HUDManager.onDelete();
 		}
 	} else if(event.ctrlKey && event.keyCode === 83) {
 		// Save
-		if(HUDManager._currentId >= 0) {
+		if(!_.active && HUDManager._currentId >= 0) {
 			HUDManager.refreshSprite();
 		}
 	}
@@ -984,7 +999,7 @@ HUDManager.returnToMaker = function() {
 //-----------------------------------------------------------------------------
 // HUDManager
 //-----------------------------------------------------------------------------
-
+//
 HUDManager.createTitle = function(id, type) {
 	return `<h3 style="text-align:center;"><b>(ID: ${id})</b> ${type} Element</h3>`;
 };
@@ -997,10 +1012,17 @@ HUDManager.createHeader = function() {
 };
 
 HUDManager.createInput = function(id, value) {
-	return `<tr>
-				<td>${id}:</td>
-				<td><input type="text" id="${id}" value="${value}"></td>
-			</tr>`;
+	if(_.active) {
+		return `<tr>
+					<td>${id}:</td>
+					<td><input type="text" id="${id}" onchange="HUDManager.refreshSprite()" value="${value}"></td>
+				</tr>`;
+	} else {
+		return `<tr>
+					<td>${id}:</td>
+					<td><input type="text" id="${id}" value="${value}"></td>
+				</tr>`;
+	}
 };
 
 HUDManager.createConditionInput = function(id, value) {
@@ -1015,17 +1037,28 @@ HUDManager.createConditionInput = function(id, value) {
 		value = '';
 	}
 	const color = (bool) ? _.trueColor : _.falseColor;
-	return `<tr id="Condition Bla">
-				<td>${id}:</td>
-				<td><input type="text" id="${id}" value="${value}" style="background-color:${color};"></td>
-			</tr>`;
+	if(_.active) {
+		return `<tr id="Condition Bla">
+					<td>${id}:</td>
+					<td><input type="text" id="${id}" onchange="HUDManager.refreshSprite()" value="${value}" style="background-color:${color};"></td>
+				</tr>`;
+	} else {
+		return `<tr id="Condition Bla">
+					<td>${id}:</td>
+					<td><input type="text" id="${id}" value="${value}" style="background-color:${color};"></td>
+				</tr>`;
+	}
 };
 
 HUDManager.createSelect = function(id) {
 	let result = `<tr>
 					<td>${id}:</td>
-					<td align="center">
-						<select id="${id}" style="width:100%">`;
+						<td align="center">`;
+	if(_.active) {
+		result += `<select id="${id}" onchange="HUDManager.refreshSprite()" style="width:100%">`;
+	} else {
+		result += `<select id="${id}" style="width:100%">`;
+	}			
 	for(let i = 1; i < arguments.length; i++) {
 		const info = arguments[i];
 		result += '<option value="' + info[0] + '" ' + info[1] + '>' + info[2] + '</option>';
@@ -1039,8 +1072,12 @@ HUDManager.createSelect = function(id) {
 HUDManager.createSelectArray = function(id, options) {
 	let result = `<tr>
 					<td>${id}:</td>
-					<td align="center">
-						<select id="${id}" style="width:100%">`;
+						<td align="center">`;
+	if(_.active) {
+		result += `<select id="${id}" onchange="HUDManager.refreshSprite()" style="width:100%">`;
+	} else {
+		result += `<select id="${id}" style="width:100%">`;
+	}	
 	for(let i = 0; i < options.length; i++) {
 		const info = options[i];
 		result += '<option value="' + info[0] + '" ' + info[1] + '>' + info[2] + '</option>';
@@ -1052,11 +1089,19 @@ HUDManager.createSelectArray = function(id, options) {
 };
 
 HUDManager.createColor = function(id, value, id2, value2) {
-	return `<tr>
-				<td>${id}:</td>
-				<td align="center"><input type="color" id="${id}" value="${value}" style="width:90%"><br style="line-height: 175%;">
-				Opacity: <input type="text" id="${id2}" value="${value2}" style="width:50%"></td>
-			</tr>`;
+	if(_.active) {
+		return `<tr>
+					<td>${id}:</td>
+					<td align="center"><input type="color" id="${id}" onchange="HUDManager.refreshSprite()" value="${value}" style="width:90%"><br style="line-height: 175%;">
+					Opacity: <input type="text" id="${id2}" onchange="HUDManager.refreshSprite()" value="${value2}" style="width:50%"></td>
+				</tr>`;
+	} else {
+		return `<tr>
+					<td>${id}:</td>
+					<td align="center"><input type="color" id="${id}" value="${value}" style="width:90%"><br style="line-height: 175%;">
+					Opacity: <input type="text" id="${id2}" value="${value2}" style="width:50%"></td>
+				</tr>`;
+	}
 };
 
 HUDManager.createFilelist = function(id, folder, value, includeNone) {
@@ -1064,8 +1109,12 @@ HUDManager.createFilelist = function(id, folder, value, includeNone) {
 	let select = '';
 	let result = `<tr>
 					<td>${id}:</td>
-					<td align="center">
-						<select id="${id}" style="width:100%">`;
+						<td align="center">`;
+	if(_.active) {
+		result += `<select id="${id}" onchange="HUDManager.refreshSprite()" style="width:100%">`;
+	} else {
+		result += `<select id="${id}" style="width:100%">`;
+	}	
 	if(includeNone) {
 		if(value === "N\n\nONE") select = 'selected';
 		else select = '';
@@ -1171,6 +1220,7 @@ HUDManager.getHtmlCreateChartOptions = function() {
 //-----------------------------------------------------------------------------
 
 HUDManager.createRefresh = function() {
+	if(_.active) return '';
 	return `<tr>
 				<td style="width: 75px;">Refresh:</td>
 				<td align="center"><button class="button" id="refreshButton" onclick="HUDManager.refreshSprite()" />Refresh!</button></td>
@@ -1291,8 +1341,8 @@ HUDManager.getControlsHtml = function() {
 						<th>Description</th>
 					</tr>
 					<tr>
-						<td id="Control">Right-Click</td>
-						<td>While holding Right-Click, one can drag the HUD pieces around on the main screen.</td>
+						<td id="Control">Left-Click</td>
+						<td>While holding Left-Click, one can drag the HUD pieces around on the main screen.</td>
 					</tr>
 					<tr>
 						<td id="Control">CTRL</td>
@@ -1461,6 +1511,7 @@ HUDManager.getStyle = function() {
 //-----------------------------------------------------------------------------
 
 HUDManager.checkInternet = function() {
+	if(!_.isPlaytest) return;
 	require('dns').lookup('www.google.com', function(err) {
 		if (err && err.code == "ENOTFOUND") {
 			this._internet = false;
@@ -2085,7 +2136,7 @@ Sprite_HUDObject.prototype.updateCondition = function() {
 		}
 	}
 };
-
+// fix
 Sprite_HUDObject.prototype.updateAnimation = function(mainVar, spd, loop, min, max, dirVar) {
 	if(spd) {
 		if(!loop) {
@@ -2220,6 +2271,25 @@ Sprite_HUDObject.prototype.updateConditionInput = function() {
 	}
 };
 
+Sprite_HUDObject.prototype.postError = function(e) {
+	console.log(e);
+	alert('The "Image" input had an error. Check the console for more info.');
+};
+
+Sprite_HUDObject.prototype.resizeBitmap = function(bit, width, height) {
+	if(bit.width !== width || bit.height !== height) {
+		bit.resize(width, height);
+		this._frame.width = 0;
+		this._frame.height = 0;
+		if(_.isV150) {
+			this._refreshFrame = true;
+			this._onBitmapLoad(bit);
+		} else {
+			this._onBitmapLoad();
+		}
+	}
+};
+
 //-----------------------------------------------------------------------------
 // Sprite_HUDText
 //-----------------------------------------------------------------------------
@@ -2276,6 +2346,8 @@ Sprite_HUDText.getHtml = function(data) {
 				${HUDManager.createRefresh()}
 			</table>`;
 };
+
+//_.active
 
 /*
  * Register Sprite_HUDText within the HUDManager
@@ -2358,12 +2430,7 @@ Sprite_HUDText.prototype.refreshProperties = function() {
 	const bit = this.bitmap;
 	const width = parseInt(this["Max Width"]);
 	const height = parseInt(this["Font Size"]) + 12;
-	if(bit.width !== width || bit.height !== height) {
-		this.bitmap.resize(width, height);
-		this._frame.width = 0;
-		this._frame.height = 0;
-		this._onBitmapLoad();
-	}
+	this.resizeBitmap(bit, width, height);
 	this.z = parseInt(this["Layer"]);
 	this.bitmap.fontFace = this["Font"];
 	this.bitmap.fontSize = parseInt(this["Font Size"]);
@@ -2470,12 +2537,7 @@ Sprite_HUDTextEx.prototype.refreshProperties = function() {
 	const bit = this.bitmap;
 	const width = parseInt(this["Width"]);
 	const height = parseInt(this["Height"]);
-	if(bit.width !== width || bit.height !== height) {
-		this.bitmap.resize(width, height);
-		this._frame.width = 0;
-		this._frame.height = 0;
-		this._onBitmapLoad();
-	}
+	this.resizeBitmap(bit, width, height);
 	this.z = parseInt(this["Layer"]);
 	this.setupSnaps();
 };
@@ -2576,7 +2638,7 @@ Sprite_HUDShape.getHtml = function(data) {
 
 	const blendArray = [];
 	for(let i = 0; i <= 16; i++) {
-		blendArray.push([String(i), parseInt(blend) === i, _.blendNames[i]])
+		blendArray.push([String(i), parseInt(blend) === i ? 'selected' : '', _.blendNames[i]])
 	}
 
 	try {
@@ -2600,8 +2662,8 @@ Sprite_HUDShape.getHtml = function(data) {
 				${HUDManager.createSelect("Fill Style",  ["solid", sele2[0], "Solid"], 
 												["horizontal", sele2[1], "Horizontal Gradient"],
 												["vertical", sele2[2], "Vertical Gradient"],
-												["radical", sele2[3], "Radical Gradient"],
-												["max radical", sele2[4], "Max Radical Gradient"])}
+												["radical", sele2[3], "Radial Gradient"],
+												["max radical", sele2[4], "Max Radial Gradient"])}
 				${HUDManager.createSelectArray("Blend", blendArray)}
 				${HUDManager.createColor("Color 1", color1, "Color 1 Alpha", color1A)}
 				${HUDManager.createColor("Color 2", color2, "Color 2 Alpha", color2A)}
@@ -2710,12 +2772,7 @@ Sprite_HUDShape.prototype.refreshProperties = function() {
 	const outlineSize = parseInt(this["Outline Size"]);
 	const width = parseInt(this["Width"]) + (outlineSize * 2);
 	const height = parseInt(this["Height"]) + (outlineSize * 2);
-	if(bit.width !== width || bit.height !== height) {
-		this.bitmap.resize(width, height);
-		this._frame.width = 0;
-		this._frame.height = 0;
-		this._onBitmapLoad();
-	}
+	this.resizeBitmap(bit, width, height);
 	this.z = parseInt(this["Layer"]);
 	this.blendMode = parseInt(this["Blend"]);
 	this.setupSnaps();
@@ -2756,7 +2813,7 @@ Sprite_HUDImage.getHtml = function(data) {
 
 	const blendArray = [];
 	for(let i = 0; i <= 16; i++) {
-		blendArray.push([String(i), parseInt(blend) === i, _.blendNames[i]])
+		blendArray.push([String(i), parseInt(blend) === i ? 'selected' : '', _.blendNames[i]])
 	}
 
 	return `${HUDManager.createTitle(data.id, Sprite_HUDImage._label)}
@@ -2823,7 +2880,15 @@ Sprite_HUDImage.prototype.refreshProperties = function() {
 	Sprite_HUDObject.prototype.refreshProperties.apply(this, arguments);
 	const image = this["Image"];
 	if(image) {
-		this.bitmap = _.getPicture(image, parseInt(this["Hue"]));
+		try {
+			this.bitmap = _.getPicture(image, parseInt(this["Hue"]));
+		} catch(e) {
+			this.postError(e);
+			this["Image"] = '';
+			this._value = '';
+			this.bitmap = null;
+			return;
+		}
 		this.z = parseInt(this["Layer"]);
 		this._baseXScale = parseFloat(this["Scale X"]);
 		this._baseYScale = parseFloat(this["Scale Y"]);
@@ -2875,7 +2940,7 @@ Sprite_HUDCodeImage.getHtml = function(data) {
 
 	const blendArray = [];
 	for(let i = 0; i <= 16; i++) {
-		blendArray.push([String(i), parseInt(blend) === i, _.blendNames[i]])
+		blendArray.push([String(i), parseInt(blend) === i ? 'selected' : '', _.blendNames[i]])
 	}
 
 	return `${HUDManager.createTitle(data.id, Sprite_HUDCodeImage._label)}
@@ -2955,11 +3020,6 @@ Sprite_HUDCodeImage.prototype.update = function() {
 		this._value = newValue;
 		this.refresh(true);
 	}
-};
-
-Sprite_HUDCodeImage.prototype.postError = function(e) {
-	console.log(e);
-	alert('The "Image" input had an error. Check the console for more info.');
 };
 
 Sprite_HUDCodeImage.prototype.refresh = function(refreshProperties) {
@@ -3157,13 +3217,16 @@ Sprite_HUDGauge.prototype.update = function() {
 Sprite_HUDGauge.prototype.refresh = function(refreshProperties) {
 	Sprite_HUDObject.prototype.refresh.apply(this, arguments);
 	if((this._value || this._value === 0) && (this._maxvalue || this._maxvalue == 0)) {
+		this.bitmap.clear();
 		const outline = parseInt(this["Outline Size"]);
 		const width = this["Width"];
 		const height = this["Height"];
 		const color1 = _.convertHex(this["Color 1"], parseInt(this["Color 1 Alpha"]));
 		const color2 = _.convertHex(this["Color 2"], parseInt(this["Color 2 Alpha"]));
-		this.bitmap.fillRect(0, 0, width + (outline * 2), height + (outline * 2), this["Outline Color"]);
-		this.bitmap.fillRect(outline, outline, width, height, this["Back Color"]);
+		const outlineCol = _.convertHex(this["Outline Color"], parseInt(this["Color 3 Alpha"]));
+		const backCol = _.convertHex(this["Back Color"], parseInt(this["Color 4 Alpha"]));
+		this.bitmap.fillRect(0, 0, width + (outline * 2), height + (outline * 2), outlineCol);
+		this.bitmap.fillRect(outline, outline, width, height, backCol);
 		const fillW = Math.floor(width * (this._value / this._maxvalue)) || 0;
 		const fillH = Math.floor(height * (this._value / this._maxvalue)) || 0;
 		const style = this["Style"];
@@ -3185,12 +3248,7 @@ Sprite_HUDGauge.prototype.refreshProperties = function() {
 	const outline = parseInt(this["Outline Size"]);
 	const width = parseInt(this["Width"]) + (outline * 2);
 	const height = parseInt(this["Height"]) + (outline * 2);
-	if(bit.width !== width || bit.height !== height) {
-		this.bitmap.resize(width, height);
-		this._frame.width = 0;
-		this._frame.height = 0;
-		this._onBitmapLoad();
-	}
+	this.resizeBitmap(bit, width, height);
 	this.z = parseInt(this["Layer"]);
 	this.setupSnaps();
 };
@@ -3457,7 +3515,7 @@ Sprite_HUDImageText.getHtml = function(data) {
 
 	const blendArray = [];
 	for(let i = 0; i <= 16; i++) {
-		blendArray.push([String(i), parseInt(blend) === i, _.blendNames[i]])
+		blendArray.push([String(i), parseInt(blend) === i ? 'selected' : '', _.blendNames[i]])
 	}
 
 	return `${HUDManager.createTitle(data.id, Sprite_HUDImageText._label)}
@@ -3690,6 +3748,8 @@ Sprite_HUDFace.prototype.initialize = function(info) {
 		this[prop] = info[prop];
 	}
 	this._value = this.getActorId();
+	this._actor = $gameActors.actor(this._value);
+	this._curFace = this._actor.faceName();
 	this.refresh(true);
 };
 
@@ -3708,9 +3768,9 @@ Sprite_HUDFace.prototype.update = function() {
 	Sprite_HUDObject.prototype.update.call(this);
 	if(!this._isActive) return;
 	const newValue = this.getActorId();
-	if(this._value !== newValue) {
+	if(this._value !== newValue || this._curFace !== this._actor.faceName()) {
 		this._value = newValue;
-		this.refresh();
+		this.refresh(true);
 	}
 };
 
@@ -3742,15 +3802,11 @@ Sprite_HUDFace.prototype.refreshProperties = function() {
 	const bit = this.bitmap;
 	const width = parseInt(this["Width"]);
 	const height = parseInt(this["Height"]);
-	if(bit.width !== width || bit.height !== height) {
-		this.bitmap.resize(width, height);
-		this._frame.width = 0;
-		this._frame.height = 0;
-		this._onBitmapLoad();
-	}
+	this.resizeBitmap(bit, width, height);
 	this.z = parseInt(this["Layer"]);
 	this._value = this.getActorId();
 	this._actor = $gameActors.actor(this._value);
+	this._curFace = this._actor.faceName();
 	this._oBitmap = ImageManager.loadFace(this._actor.faceName());
 	this.refreshMask(width, height);
 };
@@ -3774,7 +3830,12 @@ Sprite_HUDFace.prototype.refreshMaskBitmap = function(width, height) {
 	spr.bitmap.resize(width, height);
 	spr._frame.width = 0;
 	spr._frame.height = 0;
-	spr._onBitmapLoad();
+	if(_.isV150) {
+		spr._refreshFrame = true;
+		spr._onBitmapLoad(spr.bitmap);
+	} else {
+		spr._onBitmapLoad();
+	}
 };
 
 Sprite_HUDFace.prototype.redrawMask = function() {
